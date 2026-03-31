@@ -52,7 +52,7 @@ const LANG = {
     coachRegistered:"Profil coach créé ! Vérifie ton email.",
     clientRegistered:"Compte créé ! Vérifie ton email.",
     bookingSuccess:"Réservation enregistrée !",
-    noCoaches:"Aucun coach pour ce filtre.",,
+    noCoaches:"Aucun coach pour ce filtre.",
   },
   en:{
     tagline:"Find your coach, live your performance.",
@@ -92,7 +92,6 @@ const LANG = {
     clientRegistered:"Account created! Check your email.",
     bookingSuccess:"Booking registered!",
     noCoaches:"No coach found for this filter.",
-    others:"Other sports",
   }
 };
 
