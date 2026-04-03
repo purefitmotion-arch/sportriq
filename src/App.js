@@ -203,6 +203,8 @@ export default function App(){
   const [signupLangs,setSignupLangs]=useState("");
   const [signupCertifs,setSignupCertifs]=useState([""]);
   const [signupFormats,setSignupFormats]=useState([]);
+  const [signupBirthdate,setSignupBirthdate]=useState("");
+const [signupCGU,setSignupCGU]=useState(false);
   const [reviewText,setReviewText]=useState("");
   const [reviewNote,setReviewNote]=useState(5);
   const [reviewDone,setReviewDone]=useState(false);
@@ -279,7 +281,14 @@ useEffect(()=>{if(user)fetchMyBookings();},[user]);
 
   // SIGNUP
   const doSignup=async()=>{
-    if(!signupName||!signupEmail||!signupPass){setAuthMsg(T.fillAll);setAuthMsgType("error");return;}
+   if(!signupName||!signupEmail||!signupPass){setAuthMsg(T.fillAll);setAuthMsgType("error");return;}
+if(signupRole==="client"&&!signupBirthdate){setAuthMsg(lang==="fr"?"Veuillez entrer votre date de naissance.":"Please enter your date of birth.");setAuthMsgType("error");return;}
+if(signupRole==="client"&&signupBirthdate){
+  const age=new Date().getFullYear()-new Date(signupBirthdate).getFullYear();
+  if(age<18){setAuthMsg(lang==="fr"?"Vous devez avoir au moins 18 ans pour vous inscrire.":"You must be at least 18 years old to sign up.");setAuthMsgType("error");return;}
+}
+if(!signupCGU){setAuthMsg(lang==="fr"?"Vous devez accepter les CGU pour continuer.":"You must accept the Terms of Service to continue.");setAuthMsgType("error");return;}
+if(signupRole==="coach"&&(!signupSport||!signupRate||!signupLoc||!signupLangs||!signupBio)){setAuthMsg(lang==="fr"?"Veuillez remplir tous les champs obligatoires.":"Please fill in all required fields.");setAuthMsgType("error");return;}
 const passwordRegex = /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(.{8,})$/;
 if(!passwordRegex.test(signupPass)){
   setAuthMsg(lang==="fr"?"Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial (!@#$%^&*).":"Password must contain at least 8 characters, one uppercase letter, one number and one special character (!@#$%^&*).");
@@ -395,6 +404,7 @@ if(signupPass!==signupPass2){setAuthMsg(T.passwordMismatch);setAuthMsgType("erro
               <div style={{display:"flex",flexDirection:"column",gap:12}}>
                 <input placeholder={T.email} value={loginEmail} onChange={e=>setLoginEmail(e.target.value)} style={inputSt}/>
                 <input placeholder={T.password} type="password" value={loginPass} onChange={e=>setLoginPass(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doLogin()} style={inputSt}/>
+
                 <BtnPrimary label={authLoading?T.loading:T.loginBtn} onClick={doLogin} C={C} disabled={authLoading}/>
                 <p style={{fontSize:13,color:C.muted,textAlign:"center"}}>{T.noAccount} <span onClick={()=>{setAuthMode("signup");setAuthMsg(null);}} style={{color:C.accent,cursor:"pointer"}}>{T.signupTitle}</span></p>
               </div>
@@ -439,6 +449,22 @@ if(signupPass!==signupPass2){setAuthMsg(T.passwordMismatch);setAuthMsgType("erro
                       </div>
                     </>
                   )}
+                  {signupRole==="client"&&(
+  <input type="date" value={signupBirthdate} onChange={e=>setSignupBirthdate(e.target.value)} style={{...inputSt,color:signupBirthdate?C.txt:C.muted}} max={new Date(new Date().setFullYear(new Date().getFullYear()-18)).toISOString().split('T')[0]}/>
+)}
+<div style={{display:"flex",alignItems:"flex-start",gap:8,marginTop:4}}>
+  <input type="checkbox" checked={signupCGU} onChange={e=>setSignupCGU(e.target.checked)} style={{marginTop:3,cursor:"pointer",accentColor:C.accent}}/>
+  <span style={{fontSize:13,color:C.muted}}>
+    {lang==="fr"?"J'accepte les ":"I accept the "}
+    <span style={{color:C.accent,cursor:"pointer",textDecoration:"underline"}}>
+      {lang==="fr"?"Conditions Générales d'Utilisation":"Terms of Service"}
+    </span>
+    {lang==="fr"?" et la ":" and the "}
+    <span style={{color:C.accent,cursor:"pointer",textDecoration:"underline"}}>
+      {lang==="fr"?"Politique de confidentialité":"Privacy Policy"}
+    </span>
+  </span>
+</div>
                   <BtnPrimary label={authLoading?T.loading:T.signupBtn} onClick={doSignup} C={C} disabled={authLoading}/>
                   <p style={{fontSize:13,color:C.muted,textAlign:"center"}}>{T.hasAccount} <span onClick={()=>{setAuthMode("login");setAuthMsg(null);}} style={{color:C.accent,cursor:"pointer"}}>{T.loginTitle}</span></p>
                 </div>
@@ -454,6 +480,7 @@ if(signupPass!==signupPass2){setAuthMsg(T.passwordMismatch);setAuthMsgType("erro
           <div style={{padding:"72px 24px 52px",textAlign:"center",background:`radial-gradient(ellipse 80% 60% at 50% -10%,${C.accent}22,transparent)`}}>
             <div style={{display:"inline-block",fontSize:12,fontWeight:700,padding:"4px 14px",borderRadius:999,border:`1px solid ${C.accent}44`,color:C.accent,marginBottom:18,letterSpacing:.8}}>🌍 {lang==="fr"?"MARKETPLACE MONDIALE DU COACHING SPORTIF":"GLOBAL SPORTS COACHING MARKETPLACE"}</div>
             <h1 style={{fontSize:44,fontWeight:800,margin:"0 0 14px",lineHeight:1.1,color:C.txt}}>
+                          
               {lang==="fr"?"Trouve ton coach,":"Find your coach,"}<br/>
               <span style={{background:`linear-gradient(135deg,${C.accent},${C.accent2})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{lang==="fr"?"vis ta performance.":"live your performance."}</span>
             </h1>
