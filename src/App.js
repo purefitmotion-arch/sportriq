@@ -231,6 +231,7 @@ export default function App(){
 
   // Fetch coaches
   useEffect(()=>{fetchCoaches();},[]);
+useEffect(()=>{if(user)fetchMyBookings();},[user]);
 
   useEffect(()=>{msgEndRef.current?.scrollIntoView({behavior:"smooth"});},[messages]);
 
