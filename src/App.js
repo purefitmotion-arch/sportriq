@@ -231,6 +231,7 @@ export default function App(){
 
   // Fetch coaches
   useEffect(()=>{fetchCoaches();},[]);
+// eslint-disable-next-line react-hooks/exhaustive-deps
 useEffect(()=>{if(user)fetchMyBookings();},[user]);
 
   useEffect(()=>{msgEndRef.current?.scrollIntoView({behavior:"smooth"});},[messages]);
