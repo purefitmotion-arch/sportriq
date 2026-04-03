@@ -280,8 +280,13 @@ useEffect(()=>{if(user)fetchMyBookings();},[user]);
   // SIGNUP
   const doSignup=async()=>{
     if(!signupName||!signupEmail||!signupPass){setAuthMsg(T.fillAll);setAuthMsgType("error");return;}
-    if(signupPass!==signupPass2){setAuthMsg(T.passwordMismatch);setAuthMsgType("error");return;}
-    setAuthLoading(true);setAuthMsg(null);
+const passwordRegex = /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(.{8,})$/;
+if(!passwordRegex.test(signupPass)){
+  setAuthMsg(lang==="fr"?"Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial (!@#$%^&*).":"Password must contain at least 8 characters, one uppercase letter, one number and one special character (!@#$%^&*).");
+  setAuthMsgType("error");
+  return;
+}
+if(signupPass!==signupPass2){setAuthMsg(T.passwordMismatch);setAuthMsgType("error");return;}
     const{data,error}=await supabase.auth.signUp({
       email:signupEmail,password:signupPass,
       options:{data:{full_name:signupName,role:signupRole}}
