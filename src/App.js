@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import Legal from "./Legal";
 import { supabase } from "./supabase";
 
 const DARK_C = {
@@ -210,6 +211,7 @@ const [signupCGU,setSignupCGU]=useState(false);
   const [reviewText,setReviewText]=useState("");
   const [reviewNote,setReviewNote]=useState(5);
   const [reviewDone,setReviewDone]=useState(false);
+  const [showLegal,setShowLegal]=useState(false);
   const [reviews,setReviews]=useState([]);
   const [myBookings,setMyBookings]=useState([]);
   const [messages,setMessages]=useState([
@@ -463,11 +465,15 @@ name:`${signupFirstName} ${signupLastName}`, pseudo:signupPseudo,
   <span style={{fontSize:13,color:C.muted}}>
     {lang==="fr"?"J'accepte les ":"I accept the "}
     <span style={{color:C.accent,cursor:"pointer",textDecoration:"underline"}}>
-      {lang==="fr"?"Conditions Générales d'Utilisation":"Terms of Service"}
+    <span onClick={()=>setShowLegal(true)} style={{color:C.accent,cursor:"pointer",textDecoration:"underline"}}>
+  {lang==="fr"?"Conditions Générales d'Utilisation":"Terms of Service"}
+</span>
     </span>
     {lang==="fr"?" et la ":" and the "}
     <span style={{color:C.accent,cursor:"pointer",textDecoration:"underline"}}>
-      {lang==="fr"?"Politique de confidentialité":"Privacy Policy"}
+      <span onClick={()=>setShowLegal(true)} style={{color:C.accent,cursor:"pointer",textDecoration:"underline"}}>
+  {lang==="fr"?"Politique de confidentialité":"Privacy Policy"}
+</span>
     </span>
   </span>
 </div>
@@ -716,6 +722,7 @@ name:`${signupFirstName} ${signupLastName}`, pseudo:signupPseudo,
         </div>
       )}
 
+{showLegal&&<Legal lang={lang} C={C} onClose={()=>setShowLegal(false)}/>}
       {/* BOOKING MODAL */}
       {bookCoach&&!bookDone&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,backdropFilter:"blur(4px)"}} onClick={()=>setBookCoach(null)}>
@@ -754,7 +761,12 @@ name:`${signupFirstName} ${signupLastName}`, pseudo:signupPseudo,
       )}
 
       <div style={{borderTop:`1px solid ${C.border}`,padding:"14px 24px",textAlign:"center",fontSize:12,color:C.muted,marginTop:24}}>
-        © 2026 <span style={{background:`linear-gradient(135deg,${C.accent},${C.accent2})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontWeight:700}}>Sportriq</span> · Paiements sécurisés Stripe
+<div style={{borderTop:`1px solid ${C.border}`,padding:"14px 24px",textAlign:"center",fontSize:12,color:C.muted,marginTop:24,display:"flex",justifyContent:"center",gap:16,flexWrap:"wrap"}}>
+  <span>© 2026 <span style={{background:`linear-gradient(135deg,${C.accent},${C.accent2})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontWeight:700}}>Sportriq</span> · Paiements sécurisés Stripe</span>
+  <span onClick={()=>setShowLegal(true)} style={{cursor:"pointer",textDecoration:"underline",color:C.muted}}>{lang==="fr"?"CGU":"Terms"}</span>
+  <span onClick={()=>setShowLegal(true)} style={{cursor:"pointer",textDecoration:"underline",color:C.muted}}>{lang==="fr"?"Confidentialité":"Privacy"}</span>
+  <span onClick={()=>setShowLegal(true)} style={{cursor:"pointer",textDecoration:"underline",color:C.muted}}>{lang==="fr"?"Mentions légales":"Legal Notice"}</span>
+</div>
       </div>
     </div>
   );
