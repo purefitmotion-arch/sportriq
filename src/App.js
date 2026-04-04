@@ -306,7 +306,7 @@ options:{data:{first_name:signupFirstName,last_name:signupLastName,pseudo:signup
     });
     if(error){setAuthLoading(false);setAuthMsg(error.message);setAuthMsgType("error");return;}
     if(signupRole==="coach"&&data.user){
-      const sp=ALL_SPORTS.find(s=>s.fr===signupSport||s.en===signupSport)||ALL_SPORTS[0];
+
       const initials=(signupFirstName[0]||"")+(signupLastName[0]||"");
       const color=COACH_COLORS[Math.floor(Math.random()*COACH_COLORS.length)];
       await supabase.from("coaches").insert({
