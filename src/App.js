@@ -31,7 +31,7 @@ const LANG = {
     formats:["Présentiel","Visio","Programme écrit","Discussion / Conseil"],
     bookBtn:"Réserver", perH:"/ h", reviews:"avis", back:"Retour", online:"En ligne",
     loginTitle:"Connexion", email:"Email", password:"Mot de passe", loginBtn:"Se connecter",
-    signupTitle:"Inscription", name:"Nom complet", asCoach:"Coach", asClient:"Sportif·ve",
+    signupTitle:"Inscription", asCoach:"Coach", asClient:"Sportif·ve",
     certif:"Certifications", speciality:"Sport / Discipline", hourlyRate:"Tarif (€/h)", bio:"À propos",
     signupBtn:"Créer mon compte", noAccount:"Pas encore inscrit·e ?", hasAccount:"Déjà un compte ?",
     availableSlots:"Créneaux disponibles", bookWith:"Réserver avec",
@@ -39,21 +39,23 @@ const LANG = {
     leaveReview:"Laisser un avis", reviewPlaceholder:"Votre commentaire…", submitReview:"Publier",
     reviewsTitle:"Avis", noReviews:"Aucun avis pour l'instant.",
     dashTitle:"Dashboard", dashSub:"Bienvenue",
-    upcoming:"Séances à venir", earnings:"Revenus (mois)", rating:"Note", sessions:"Séances",
-    nextSessions:"Prochaines séances", revenueChart:"Revenus 6 mois",
+    upcoming:"Séances à venir", nextSessions:"Prochaines séances",
     msgPlaceholder:"Message…", msgSend:"Envoyer",
     logout:"Déconnexion", nav:{coaches:"Coachs", messages:"Messages", dashboard:"Dashboard"},
     formatLabel:"Format de coaching", others:"Autres sports",
-    loading:"Chargement…", error:"Une erreur est survenue.",
-    emailSent:"Email de confirmation envoyé ! Vérifie ta boîte mail.",
-    checkEmail:"Vérifie ton email pour confirmer ton compte.",
-    confirmPassword:"Confirme ton mot de passe",
+    loading:"Chargement…", confirmPassword:"Confirme ton mot de passe",
     passwordMismatch:"Les mots de passe ne correspondent pas.",
     fillAll:"Remplis tous les champs obligatoires.",
     coachRegistered:"Profil coach créé ! Vérifie ton email.",
     clientRegistered:"Compte créé ! Vérifie ton email.",
-    bookingSuccess:"Réservation enregistrée !",
     noCoaches:"Aucun coach pour ce filtre.",
+    cookieText:"Sportriq utilise des cookies pour améliorer votre expérience. En continuant, vous acceptez notre ",
+    cookiePrivacy:"politique de confidentialité",
+    cookieAccept:"Accepter", cookieDecline:"Refuser",
+    cguLink:"Conditions Générales d'Utilisation",
+    privacyLink:"Politique de confidentialité",
+    cguAccept:"J'accepte les ",
+    cguAnd:" et la ",
   },
   en:{
     tagline:"Find your coach, live your performance.",
@@ -70,7 +72,7 @@ const LANG = {
     formats:["In-person","Video call","Written program","Consultation"],
     bookBtn:"Book", perH:"/ h", reviews:"reviews", back:"Back", online:"Online",
     loginTitle:"Log in", email:"Email", password:"Password", loginBtn:"Log in",
-    signupTitle:"Sign up", name:"Full name", asCoach:"Coach", asClient:"Athlete",
+    signupTitle:"Sign up", asCoach:"Coach", asClient:"Athlete",
     certif:"Certifications", speciality:"Sport / Discipline", hourlyRate:"Rate (€/h)", bio:"About",
     signupBtn:"Create account", noAccount:"No account yet?", hasAccount:"Already have an account?",
     availableSlots:"Available slots", bookWith:"Book with",
@@ -78,21 +80,23 @@ const LANG = {
     leaveReview:"Leave a review", reviewPlaceholder:"Your comment…", submitReview:"Post",
     reviewsTitle:"Reviews", noReviews:"No reviews yet.",
     dashTitle:"Dashboard", dashSub:"Welcome",
-    upcoming:"Upcoming", earnings:"Earnings (month)", rating:"Rating", sessions:"Sessions",
-    nextSessions:"Upcoming sessions", revenueChart:"Revenue 6 months",
+    upcoming:"Upcoming", nextSessions:"Upcoming sessions",
     msgPlaceholder:"Message…", msgSend:"Send",
     logout:"Log out", nav:{coaches:"Coaches", messages:"Messages", dashboard:"Dashboard"},
     formatLabel:"Coaching format", others:"Other sports",
-    loading:"Loading…", error:"An error occurred.",
-    emailSent:"Confirmation email sent! Check your inbox.",
-    checkEmail:"Check your email to confirm your account.",
-    confirmPassword:"Confirm password",
+    loading:"Loading…", confirmPassword:"Confirm password",
     passwordMismatch:"Passwords do not match.",
     fillAll:"Please fill in all required fields.",
     coachRegistered:"Coach profile created! Check your email.",
     clientRegistered:"Account created! Check your email.",
-    bookingSuccess:"Booking registered!",
     noCoaches:"No coach found for this filter.",
+    cookieText:"Sportriq uses cookies to improve your experience. By continuing, you accept our ",
+    cookiePrivacy:"privacy policy",
+    cookieAccept:"Accept", cookieDecline:"Decline",
+    cguLink:"Terms of Service",
+    privacyLink:"Privacy Policy",
+    cguAccept:"I accept the ",
+    cguAnd:" and the ",
   }
 };
 
@@ -138,16 +142,40 @@ function Alert({msg,type="error",C}){
   return <div style={{padding:"10px 14px",borderRadius:10,background:`${col}18`,border:`1px solid ${col}44`,color:col,fontSize:13,marginBottom:12}}>{msg}</div>;
 }
 
+function CookieBanner({lang,C,onShowLegal}){
+  const [visible,setVisible]=useState(false);
+  useEffect(()=>{
+    const consent=localStorage.getItem("sportriq_cookie_consent");
+    if(!consent)setVisible(true);
+  },[]);
+  const accept=()=>{localStorage.setItem("sportriq_cookie_consent","accepted");setVisible(false);};
+  const decline=()=>{localStorage.setItem("sportriq_cookie_consent","declined");setVisible(false);};
+  const T=LANG[lang];
+  if(!visible)return null;
+  return(
+    <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:300,padding:"16px 24px",background:C.card,borderTop:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+      <p style={{fontSize:13,color:C.muted,margin:0,maxWidth:600}}>
+        {T.cookieText}
+        <span onClick={onShowLegal} style={{color:C.accent,cursor:"pointer",textDecoration:"underline"}}>{T.cookiePrivacy}</span>.
+      </p>
+      <div style={{display:"flex",gap:8}}>
+        <button onClick={decline} style={{padding:"7px 16px",borderRadius:8,border:`1px solid ${C.border}`,background:"transparent",color:C.muted,cursor:"pointer",fontSize:13}}>{T.cookieDecline}</button>
+        <button onClick={accept} style={{padding:"7px 16px",borderRadius:8,border:"none",background:`linear-gradient(135deg,${C.accent},${C.accent2})`,color:"#fff",cursor:"pointer",fontSize:13,fontWeight:700}}>{T.cookieAccept}</button>
+      </div>
+    </div>
+  );
+}
+
 function CoachCard({c,lang,T,C,onSelect,onBook}){
   const initials=(c.name||"??").split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
-  const color=c.color||COACH_COLORS[c.id%COACH_COLORS.length]||"#6C63FF";
+  const color=c.color||COACH_COLORS[0];
   const formats=c.formats||[];
   return(
     <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:16,cursor:"pointer"}} onClick={onSelect}>
       <div style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:10}}>
         <Av initials={initials} color={color} size={44}/>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontWeight:700,fontSize:15,color:C.txt,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{c.name}</div>
+          <div style={{fontWeight:700,fontSize:15,color:C.txt,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{c.pseudo?`@${c.pseudo}`:c.name}</div>
           <div style={{fontSize:12,color:C.muted}}>{c.sport} · {c.location||"—"}</div>
         </div>
         <div style={{textAlign:"right",flexShrink:0}}>
@@ -193,9 +221,9 @@ export default function App(){
   const [loginEmail,setLoginEmail]=useState("");
   const [loginPass,setLoginPass]=useState("");
   const [signupRole,setSignupRole]=useState("client");
- const [signupFirstName,setSignupFirstName]=useState("");
-const [signupLastName,setSignupLastName]=useState("");
-const [signupPseudo,setSignupPseudo]=useState("");
+  const [signupFirstName,setSignupFirstName]=useState("");
+  const [signupLastName,setSignupLastName]=useState("");
+  const [signupPseudo,setSignupPseudo]=useState("");
   const [signupEmail,setSignupEmail]=useState("");
   const [signupPass,setSignupPass]=useState("");
   const [signupPass2,setSignupPass2]=useState("");
@@ -207,7 +235,7 @@ const [signupPseudo,setSignupPseudo]=useState("");
   const [signupCertifs,setSignupCertifs]=useState([""]);
   const [signupFormats,setSignupFormats]=useState([]);
   const [signupBirthdate,setSignupBirthdate]=useState("");
-const [signupCGU,setSignupCGU]=useState(false);
+  const [signupCGU,setSignupCGU]=useState(false);
   const [reviewText,setReviewText]=useState("");
   const [reviewNote,setReviewNote]=useState(5);
   const [reviewDone,setReviewDone]=useState(false);
@@ -223,7 +251,6 @@ const [signupCGU,setSignupCGU]=useState(false);
   const msgEndRef=useRef(null);
   const T=LANG[lang];
 
-  // Auth listener
   useEffect(()=>{
     supabase.auth.getSession().then(({data:{session}})=>{
       if(session){setUser(session.user);fetchUserRole(session.user.id);}
@@ -233,13 +260,12 @@ const [signupCGU,setSignupCGU]=useState(false);
       else{setUser(null);setUserRole(null);}
     });
     return()=>subscription.unsubscribe();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
-  // Fetch coaches
   useEffect(()=>{fetchCoaches();},[]);
-// eslint-disable-next-line react-hooks/exhaustive-deps
-useEffect(()=>{if(user)fetchMyBookings();},[user]);
-
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(()=>{if(user)fetchMyBookings();},[user]);
   useEffect(()=>{msgEndRef.current?.scrollIntoView({behavior:"smooth"});},[messages]);
 
   const fetchCoaches=async()=>{
@@ -248,32 +274,26 @@ useEffect(()=>{if(user)fetchMyBookings();},[user]);
     if(!error&&data)setCoaches(data);
     setLoadingCoaches(false);
   };
-
   const fetchUserRole=async(uid)=>{
     const{data}=await supabase.from("coaches").select("id").eq("user_id",uid).single();
     setUserRole(data?"coach":"client");
   };
-
   const fetchReviews=async(coachId)=>{
     const{data}=await supabase.from("reviews").select("*").eq("coach_id",coachId).order("created_at",{ascending:false});
     if(data)setReviews(data);
   };
-
   const fetchMyBookings=async()=>{
     if(!user)return;
     const{data}=await supabase.from("bookings").select("*,coaches(name,sport)").eq("client_id",user.id).order("created_at",{ascending:false});
     if(data)setMyBookings(data);
   };
-
   const switchLang=l=>{setLang(l);setSportFilter("ALL");};
-
   const filteredCoaches=coaches.filter(c=>{
     const s=sportFilter==="ALL"||c.sport===sportFilter;
     const f=fmtFilter==="ALL"||(c.formats||[]).includes(fmtFilter);
     return s&&f;
   });
 
-  // LOGIN
   const doLogin=async()=>{
     if(!loginEmail||!loginPass){setAuthMsg(T.fillAll);setAuthMsgType("error");return;}
     setAuthLoading(true);setAuthMsg(null);
@@ -283,38 +303,34 @@ useEffect(()=>{if(user)fetchMyBookings();},[user]);
     else{setPage("dashboard");}
   };
 
-  // SIGNUP
   const doSignup=async()=>{
-   if(!signupFirstName||!signupLastName||!signupPseudo||!signupEmail||!signupPass){setAuthMsg(T.fillAll);setAuthMsgType("error");return;}
-if(signupRole==="client"&&!signupBirthdate){setAuthMsg(lang==="fr"?"Veuillez entrer votre date de naissance.":"Please enter your date of birth.");setAuthMsgType("error");return;}
-if(signupRole==="client"&&signupBirthdate){
-  const age=new Date().getFullYear()-new Date(signupBirthdate).getFullYear();
-  if(age<18){setAuthMsg(lang==="fr"?"Vous devez avoir au moins 18 ans pour vous inscrire.":"You must be at least 18 years old to sign up.");setAuthMsgType("error");return;}
-}
-if(!signupCGU){setAuthMsg(lang==="fr"?"Vous devez accepter les CGU pour continuer.":"You must accept the Terms of Service to continue.");setAuthMsgType("error");return;}
-if(signupRole==="coach"&&(!signupSport||!signupRate||!signupLoc||!signupLangs||!signupBio)){setAuthMsg(lang==="fr"?"Veuillez remplir tous les champs obligatoires.":"Please fill in all required fields.");setAuthMsgType("error");return;}
-const{data:existingPseudo}=await supabase.from("coaches").select("id").eq("pseudo",signupPseudo).single();
-if(existingPseudo){setAuthMsg(lang==="fr"?"Ce pseudo est déjà pris, choisis-en un autre.":"This pseudo is already taken, please choose another.");setAuthMsgType("error");return;}
-const passwordRegex = /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(.{8,})$/;
-if(!passwordRegex.test(signupPass)){
-  setAuthMsg(lang==="fr"?"Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial (!@#$%^&*).":"Password must contain at least 8 characters, one uppercase letter, one number and one special character (!@#$%^&*).");
-  setAuthMsgType("error");
-  return;
-}
-if(signupPass!==signupPass2){setAuthMsg(T.passwordMismatch);setAuthMsgType("error");return;}
+    if(!signupFirstName||!signupLastName||!signupPseudo||!signupEmail||!signupPass){setAuthMsg(T.fillAll);setAuthMsgType("error");return;}
+    if(signupRole==="client"&&!signupBirthdate){setAuthMsg(lang==="fr"?"Veuillez entrer votre date de naissance.":"Please enter your date of birth.");setAuthMsgType("error");return;}
+    if(signupRole==="client"&&signupBirthdate){
+      const age=new Date().getFullYear()-new Date(signupBirthdate).getFullYear();
+      if(age<18){setAuthMsg(lang==="fr"?"Vous devez avoir au moins 18 ans.":"You must be at least 18 years old.");setAuthMsgType("error");return;}
+    }
+    if(!signupCGU){setAuthMsg(lang==="fr"?"Vous devez accepter les CGU.":"You must accept the Terms of Service.");setAuthMsgType("error");return;}
+    if(signupRole==="coach"&&(!signupSport||!signupRate||!signupLoc||!signupLangs||!signupBio)){setAuthMsg(T.fillAll);setAuthMsgType("error");return;}
+    const{data:existingPseudo}=await supabase.from("coaches").select("id").eq("pseudo",signupPseudo).single();
+    if(existingPseudo){setAuthMsg(lang==="fr"?"Ce pseudo est déjà pris.":"This pseudo is already taken.");setAuthMsgType("error");return;}
+    const passwordRegex=/^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(.{8,})$/;
+    if(!passwordRegex.test(signupPass)){setAuthMsg(lang==="fr"?"Mot de passe : 8 car. min, 1 majuscule, 1 chiffre, 1 symbole (!@#$%^&*).":"Password: 8+ chars, 1 uppercase, 1 number, 1 symbol (!@#$%^&*).");setAuthMsgType("error");return;}
+    if(signupPass!==signupPass2){setAuthMsg(T.passwordMismatch);setAuthMsgType("error");return;}
+    setAuthLoading(true);setAuthMsg(null);
     const{data,error}=await supabase.auth.signUp({
       email:signupEmail,password:signupPass,
-options:{data:{first_name:signupFirstName,last_name:signupLastName,pseudo:signupPseudo,role:signupRole}}
+      options:{data:{first_name:signupFirstName,last_name:signupLastName,pseudo:signupPseudo,role:signupRole}}
     });
     if(error){setAuthLoading(false);setAuthMsg(error.message);setAuthMsgType("error");return;}
     if(signupRole==="coach"&&data.user){
-
       const initials=(signupFirstName[0]||"")+(signupLastName[0]||"");
       const color=COACH_COLORS[Math.floor(Math.random()*COACH_COLORS.length)];
       await supabase.from("coaches").insert({
-name:`${signupFirstName} ${signupLastName}`, pseudo:signupPseudo,
-        location:signupLoc, langs:signupLangs, price:parseInt(signupRate)||60,
-        bio:signupBio, certifs:signupCertifs.filter(Boolean),
+        user_id:data.user.id, name:`${signupFirstName} ${signupLastName}`, pseudo:signupPseudo,
+        sport:signupSport, location:signupLoc, langs:signupLangs,
+        price:parseInt(signupRate)||60, bio:signupBio,
+        certifs:signupCertifs.filter(Boolean),
         formats:signupFormats.length?signupFormats:["Présentiel","Visio"],
         avatar:initials, color
       });
@@ -326,25 +342,18 @@ name:`${signupFirstName} ${signupLastName}`, pseudo:signupPseudo,
     setTimeout(()=>{setPage("home");},2000);
   };
 
-  // BOOKING
   const doBook=async()=>{
     if(!user){setPage("auth");setAuthMode("login");setBookCoach(null);return;}
-    if(!bookSlot||!bookFmt){return;}
+    if(!bookSlot||!bookFmt)return;
     const{error}=await supabase.from("bookings").insert({
-      client_id:user.id, coach_id:bookCoach.id,
-      slot:bookSlot, format:bookFmt,
-      amount:bookCoach.price, status:"pending"
+      client_id:user.id,coach_id:bookCoach.id,slot:bookSlot,format:bookFmt,amount:bookCoach.price,status:"pending"
     });
     if(!error){setBookDone(true);fetchMyBookings();}
   };
 
-  // REVIEW
   const submitReview=async()=>{
     if(!reviewText.trim()||!user||!selectedCoach)return;
-    await supabase.from("reviews").insert({
-      coach_id:selectedCoach.id, client_id:user.id,
-      note:reviewNote, text:reviewText
-    });
+    await supabase.from("reviews").insert({coach_id:selectedCoach.id,client_id:user.id,note:reviewNote,text:reviewText});
     setReviewText("");setReviewDone(true);
     fetchReviews(selectedCoach.id);
     setTimeout(()=>setReviewDone(false),2500);
@@ -358,10 +367,7 @@ name:`${signupFirstName} ${signupLastName}`, pseudo:signupPseudo,
     setTimeout(()=>setMessages(m=>[...m,{from:"coach",text_fr:"Super, à très vite !",text_en:"Great, see you soon!"}]),800);
   };
 
-  const doLogout=async()=>{
-    await supabase.auth.signOut();
-    setUser(null);setUserRole(null);setPage("home");
-  };
+  const doLogout=async()=>{await supabase.auth.signOut();setUser(null);setUserRole(null);setPage("home");};
 
   const card={background:C.card,border:`1px solid ${C.border}`,borderRadius:16};
   const card2={background:C.card2,border:`1px solid ${C.border}`,borderRadius:16};
@@ -388,7 +394,7 @@ name:`${signupFirstName} ${signupLastName}`, pseudo:signupPseudo,
           ))}
           {user?(
             <div style={{display:"flex",gap:6,alignItems:"center"}}>
-              <span style={{fontSize:13,color:C.muted}}>👤 {(user.user_metadata?.full_name||user.email).split(" ")[0]}</span>
+              <span style={{fontSize:13,color:C.muted}}>👤 {(user.user_metadata?.first_name||user.email).split(" ")[0]}</span>
               <button onClick={doLogout} style={{fontSize:12,padding:"5px 10px",borderRadius:8,border:`1px solid ${C.border}`,background:"transparent",color:C.muted,cursor:"pointer"}}>{T.logout}</button>
             </div>
           ):(
@@ -410,7 +416,6 @@ name:`${signupFirstName} ${signupLastName}`, pseudo:signupPseudo,
               <div style={{display:"flex",flexDirection:"column",gap:12}}>
                 <input placeholder={T.email} value={loginEmail} onChange={e=>setLoginEmail(e.target.value)} style={inputSt}/>
                 <input placeholder={T.password} type="password" value={loginPass} onChange={e=>setLoginPass(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doLogin()} style={inputSt}/>
-
                 <BtnPrimary label={authLoading?T.loading:T.loginBtn} onClick={doLogin} C={C} disabled={authLoading}/>
                 <p style={{fontSize:13,color:C.muted,textAlign:"center"}}>{T.noAccount} <span onClick={()=>{setAuthMode("signup");setAuthMsg(null);}} style={{color:C.accent,cursor:"pointer"}}>{T.signupTitle}</span></p>
               </div>
@@ -423,8 +428,8 @@ name:`${signupFirstName} ${signupLastName}`, pseudo:signupPseudo,
                 </div>
                 <div style={{display:"flex",flexDirection:"column",gap:10}}>
                   <input placeholder={lang==="fr"?"Prénom":"First name"} value={signupFirstName} onChange={e=>setSignupFirstName(e.target.value)} style={inputSt}/>
-<input placeholder={lang==="fr"?"Nom":"Last name"} value={signupLastName} onChange={e=>setSignupLastName(e.target.value)} style={inputSt}/>
-<input placeholder={lang==="fr"?"Pseudo (ex: @coachkev)":"Pseudo (e.g. @coachkev)"} value={signupPseudo} onChange={e=>setSignupPseudo(e.target.value)} style={inputSt}/>
+                  <input placeholder={lang==="fr"?"Nom":"Last name"} value={signupLastName} onChange={e=>setSignupLastName(e.target.value)} style={inputSt}/>
+                  <input placeholder={lang==="fr"?"Pseudo (ex: @coachkev)":"Pseudo (e.g. @coachkev)"} value={signupPseudo} onChange={e=>setSignupPseudo(e.target.value)} style={inputSt}/>
                   <input placeholder={T.email} value={signupEmail} onChange={e=>setSignupEmail(e.target.value)} style={inputSt}/>
                   <input placeholder={T.password} type="password" value={signupPass} onChange={e=>setSignupPass(e.target.value)} style={inputSt}/>
                   <input placeholder={T.confirmPassword} type="password" value={signupPass2} onChange={e=>setSignupPass2(e.target.value)} style={inputSt}/>
@@ -432,7 +437,7 @@ name:`${signupFirstName} ${signupLastName}`, pseudo:signupPseudo,
                     <>
                       <select value={signupSport} onChange={e=>setSignupSport(e.target.value)} style={{...inputSt,color:signupSport?C.txt:C.muted}}>
                         <option value="">{T.speciality}</option>
-                        {ALL_SPORTS.map(s=><option key={s.fr} value={lang==="fr"?s.fr:s.en}>{s.emoji} {lang==="fr"?s.fr:s.en}</option>)}
+                        {ALL_SPORTS.map(s=><option key={s.fr} value={lang==="fr"?`${s.emoji} ${s.fr}`:`${s.emoji} ${s.en}`}>{s.emoji} {lang==="fr"?s.fr:s.en}</option>)}
                       </select>
                       <input placeholder={T.hourlyRate} type="number" value={signupRate} onChange={e=>setSignupRate(e.target.value)} style={inputSt}/>
                       <input placeholder={lang==="fr"?"Ville, Pays":"City, Country"} value={signupLoc} onChange={e=>setSignupLoc(e.target.value)} style={inputSt}/>
@@ -458,25 +463,17 @@ name:`${signupFirstName} ${signupLastName}`, pseudo:signupPseudo,
                     </>
                   )}
                   {signupRole==="client"&&(
-  <input type="date" value={signupBirthdate} onChange={e=>setSignupBirthdate(e.target.value)} style={{...inputSt,color:signupBirthdate?C.txt:C.muted}} max={new Date(new Date().setFullYear(new Date().getFullYear()-18)).toISOString().split('T')[0]}/>
-)}
-<div style={{display:"flex",alignItems:"flex-start",gap:8,marginTop:4}}>
-  <input type="checkbox" checked={signupCGU} onChange={e=>setSignupCGU(e.target.checked)} style={{marginTop:3,cursor:"pointer",accentColor:C.accent}}/>
-  <span style={{fontSize:13,color:C.muted}}>
-    {lang==="fr"?"J'accepte les ":"I accept the "}
-    <span style={{color:C.accent,cursor:"pointer",textDecoration:"underline"}}>
-    <span onClick={()=>setShowLegal(true)} style={{color:C.accent,cursor:"pointer",textDecoration:"underline"}}>
-  {lang==="fr"?"Conditions Générales d'Utilisation":"Terms of Service"}
-</span>
-    </span>
-    {lang==="fr"?" et la ":" and the "}
-    <span style={{color:C.accent,cursor:"pointer",textDecoration:"underline"}}>
-      <span onClick={()=>setShowLegal(true)} style={{color:C.accent,cursor:"pointer",textDecoration:"underline"}}>
-  {lang==="fr"?"Politique de confidentialité":"Privacy Policy"}
-</span>
-    </span>
-  </span>
-</div>
+                    <input type="date" value={signupBirthdate} onChange={e=>setSignupBirthdate(e.target.value)} style={{...inputSt,color:signupBirthdate?C.txt:C.muted}} max={new Date(new Date().setFullYear(new Date().getFullYear()-18)).toISOString().split('T')[0]}/>
+                  )}
+                  <div style={{display:"flex",alignItems:"flex-start",gap:8,marginTop:4}}>
+                    <input type="checkbox" checked={signupCGU} onChange={e=>setSignupCGU(e.target.checked)} style={{marginTop:3,cursor:"pointer",accentColor:C.accent}}/>
+                    <span style={{fontSize:13,color:C.muted}}>
+                      {T.cguAccept}
+                      <span onClick={()=>setShowLegal(true)} style={{color:C.accent,cursor:"pointer",textDecoration:"underline"}}>{T.cguLink}</span>
+                      {T.cguAnd}
+                      <span onClick={()=>setShowLegal(true)} style={{color:C.accent,cursor:"pointer",textDecoration:"underline"}}>{T.privacyLink}</span>
+                    </span>
+                  </div>
                   <BtnPrimary label={authLoading?T.loading:T.signupBtn} onClick={doSignup} C={C} disabled={authLoading}/>
                   <p style={{fontSize:13,color:C.muted,textAlign:"center"}}>{T.hasAccount} <span onClick={()=>{setAuthMode("login");setAuthMsg(null);}} style={{color:C.accent,cursor:"pointer"}}>{T.loginTitle}</span></p>
                 </div>
@@ -492,7 +489,6 @@ name:`${signupFirstName} ${signupLastName}`, pseudo:signupPseudo,
           <div style={{padding:"72px 24px 52px",textAlign:"center",background:`radial-gradient(ellipse 80% 60% at 50% -10%,${C.accent}22,transparent)`}}>
             <div style={{display:"inline-block",fontSize:12,fontWeight:700,padding:"4px 14px",borderRadius:999,border:`1px solid ${C.accent}44`,color:C.accent,marginBottom:18,letterSpacing:.8}}>🌍 {lang==="fr"?"MARKETPLACE MONDIALE DU COACHING SPORTIF":"GLOBAL SPORTS COACHING MARKETPLACE"}</div>
             <h1 style={{fontSize:44,fontWeight:800,margin:"0 0 14px",lineHeight:1.1,color:C.txt}}>
-                          
               {lang==="fr"?"Trouve ton coach,":"Find your coach,"}<br/>
               <span style={{background:`linear-gradient(135deg,${C.accent},${C.accent2})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{lang==="fr"?"vis ta performance.":"live your performance."}</span>
             </h1>
@@ -588,7 +584,8 @@ name:`${signupFirstName} ${signupLastName}`, pseudo:signupPseudo,
             <div style={{display:"flex",gap:14,alignItems:"flex-start",marginBottom:14}}>
               <Av initials={(selectedCoach.name||"??").split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()} color={selectedCoach.color||C.accent} size={60}/>
               <div style={{flex:1}}>
-                <div style={{fontWeight:700,fontSize:18,color:C.txt}}>{selectedCoach.name}</div>
+                <div style={{fontWeight:700,fontSize:18,color:C.txt}}>{selectedCoach.pseudo?`@${selectedCoach.pseudo}`:selectedCoach.name}</div>
+                <div style={{fontSize:13,color:C.muted,marginBottom:2}}>{selectedCoach.name}</div>
                 <div style={{color:C.muted,fontSize:14,marginBottom:6}}>{selectedCoach.sport} · {selectedCoach.location||"—"}</div>
                 <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                   {(selectedCoach.formats||[]).map(f=><Tag key={f} label={`${FMTI[f]||""} ${f}`} color={C.accent2}/>)}
@@ -693,7 +690,7 @@ name:`${signupFirstName} ${signupLastName}`, pseudo:signupPseudo,
           ):(
             <>
               <h2 style={{fontWeight:700,fontSize:22,margin:0,color:C.txt}}>{T.dashTitle}</h2>
-              <p style={{color:C.muted,margin:"4px 0 20px"}}>{T.dashSub}, {(user.user_metadata?.full_name||user.email).split(" ")[0]} 👋 <Tag label={userRole==="coach"?"🏅 Coach":"👤 Sportif"} color={userRole==="coach"?C.accent:C.accent2}/></p>
+              <p style={{color:C.muted,margin:"4px 0 20px"}}>{T.dashSub}, {(user.user_metadata?.first_name||user.email).split(" ")[0]} 👋 <Tag label={userRole==="coach"?"🏅 Coach":"👤 Sportif"} color={userRole==="coach"?C.accent:C.accent2}/></p>
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:12,marginBottom:24}}>
                 {[
                   {l:T.upcoming,v:myBookings.filter(b=>b.status==="pending").length.toString()},
@@ -722,12 +719,13 @@ name:`${signupFirstName} ${signupLastName}`, pseudo:signupPseudo,
         </div>
       )}
 
-{showLegal&&<Legal lang={lang} C={C} onClose={()=>setShowLegal(false)}/>}
-      {/* BOOKING MODAL */}
+      {/* MODALS */}
+      {showLegal&&<Legal lang={lang} C={C} onClose={()=>setShowLegal(false)}/>}
+
       {bookCoach&&!bookDone&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,backdropFilter:"blur(4px)"}} onClick={()=>setBookCoach(null)}>
           <div style={{...card,padding:28,maxWidth:380,width:"90%"}} onClick={e=>e.stopPropagation()}>
-            <h3 style={{fontWeight:700,fontSize:18,marginBottom:4,color:C.txt}}>{T.bookWith} {bookCoach.name}</h3>
+            <h3 style={{fontWeight:700,fontSize:18,marginBottom:4,color:C.txt}}>{T.bookWith} {bookCoach.pseudo?`@${bookCoach.pseudo}`:bookCoach.name}</h3>
             <p style={{color:C.muted,fontSize:14,marginBottom:18}}>{bookCoach.price}€ {T.perH} · Coach 5% + Client 3%</p>
             {!user&&<Alert msg={lang==="fr"?"Connecte-toi pour réserver.":"Log in to book."} type="error" C={C}/>}
             <div style={{marginBottom:14}}>
@@ -746,10 +744,11 @@ name:`${signupFirstName} ${signupLastName}`, pseudo:signupPseudo,
                 ))}
               </div>
             </div>
-            <BtnPrimary label={lang==="fr"?`Confirmer la réservation`:`Confirm booking`} onClick={doBook} C={C} disabled={!bookSlot||!bookFmt}/>
+            <BtnPrimary label={lang==="fr"?"Confirmer la réservation":"Confirm booking"} onClick={doBook} C={C} disabled={!bookSlot||!bookFmt}/>
           </div>
         </div>
       )}
+
       {bookDone&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100}} onClick={()=>{setBookCoach(null);setBookDone(false);setBookSlot(null);setBookFmt(null);}}>
           <div style={{...card,padding:36,maxWidth:300,width:"90%",textAlign:"center"}}>
@@ -760,14 +759,16 @@ name:`${signupFirstName} ${signupLastName}`, pseudo:signupPseudo,
         </div>
       )}
 
-      <div style={{borderTop:`1px solid ${C.border}`,padding:"14px 24px",textAlign:"center",fontSize:12,color:C.muted,marginTop:24}}>
-<div style={{borderTop:`1px solid ${C.border}`,padding:"14px 24px",textAlign:"center",fontSize:12,color:C.muted,marginTop:24,display:"flex",justifyContent:"center",gap:16,flexWrap:"wrap"}}>
-  <span>© 2026 <span style={{background:`linear-gradient(135deg,${C.accent},${C.accent2})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontWeight:700}}>Sportriq</span> · Paiements sécurisés Stripe</span>
-  <span onClick={()=>setShowLegal(true)} style={{cursor:"pointer",textDecoration:"underline",color:C.muted}}>{lang==="fr"?"CGU":"Terms"}</span>
-  <span onClick={()=>setShowLegal(true)} style={{cursor:"pointer",textDecoration:"underline",color:C.muted}}>{lang==="fr"?"Confidentialité":"Privacy"}</span>
-  <span onClick={()=>setShowLegal(true)} style={{cursor:"pointer",textDecoration:"underline",color:C.muted}}>{lang==="fr"?"Mentions légales":"Legal Notice"}</span>
-</div>
+      {/* FOOTER */}
+      <div style={{borderTop:`1px solid ${C.border}`,padding:"14px 24px",textAlign:"center",fontSize:12,color:C.muted,marginTop:24,display:"flex",justifyContent:"center",gap:16,flexWrap:"wrap"}}>
+        <span>© 2026 <span style={{background:`linear-gradient(135deg,${C.accent},${C.accent2})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontWeight:700}}>Sportriq</span> · Paiements sécurisés Stripe</span>
+        <span onClick={()=>setShowLegal(true)} style={{cursor:"pointer",textDecoration:"underline",color:C.muted}}>{lang==="fr"?"CGU":"Terms"}</span>
+        <span onClick={()=>setShowLegal(true)} style={{cursor:"pointer",textDecoration:"underline",color:C.muted}}>{lang==="fr"?"Confidentialité":"Privacy"}</span>
+        <span onClick={()=>setShowLegal(true)} style={{cursor:"pointer",textDecoration:"underline",color:C.muted}}>{lang==="fr"?"Mentions légales":"Legal Notice"}</span>
       </div>
+
+      {/* COOKIE BANNER */}
+      <CookieBanner lang={lang} C={C} onShowLegal={()=>setShowLegal(true)}/>
     </div>
   );
 }
