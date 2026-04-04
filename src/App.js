@@ -192,7 +192,9 @@ export default function App(){
   const [loginEmail,setLoginEmail]=useState("");
   const [loginPass,setLoginPass]=useState("");
   const [signupRole,setSignupRole]=useState("client");
-  const [signupName,setSignupName]=useState("");
+ const [signupFirstName,setSignupFirstName]=useState("");
+const [signupLastName,setSignupLastName]=useState("");
+const [signupPseudo,setSignupPseudo]=useState("");
   const [signupEmail,setSignupEmail]=useState("");
   const [signupPass,setSignupPass]=useState("");
   const [signupPass2,setSignupPass2]=useState("");
@@ -281,7 +283,7 @@ useEffect(()=>{if(user)fetchMyBookings();},[user]);
 
   // SIGNUP
   const doSignup=async()=>{
-   if(!signupName||!signupEmail||!signupPass){setAuthMsg(T.fillAll);setAuthMsgType("error");return;}
+   if(!signupFirstName||!signupLastName||!signupPseudo||!signupEmail||!signupPass){setAuthMsg(T.fillAll);setAuthMsgType("error");return;}
 if(signupRole==="client"&&!signupBirthdate){setAuthMsg(lang==="fr"?"Veuillez entrer votre date de naissance.":"Please enter your date of birth.");setAuthMsgType("error");return;}
 if(signupRole==="client"&&signupBirthdate){
   const age=new Date().getFullYear()-new Date(signupBirthdate).getFullYear();
@@ -289,6 +291,8 @@ if(signupRole==="client"&&signupBirthdate){
 }
 if(!signupCGU){setAuthMsg(lang==="fr"?"Vous devez accepter les CGU pour continuer.":"You must accept the Terms of Service to continue.");setAuthMsgType("error");return;}
 if(signupRole==="coach"&&(!signupSport||!signupRate||!signupLoc||!signupLangs||!signupBio)){setAuthMsg(lang==="fr"?"Veuillez remplir tous les champs obligatoires.":"Please fill in all required fields.");setAuthMsgType("error");return;}
+const{data:existingPseudo}=await supabase.from("coaches").select("id").eq("pseudo",signupPseudo).single();
+if(existingPseudo){setAuthMsg(lang==="fr"?"Ce pseudo est déjà pris, choisis-en un autre.":"This pseudo is already taken, please choose another.");setAuthMsgType("error");return;}
 const passwordRegex = /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(.{8,})$/;
 if(!passwordRegex.test(signupPass)){
   setAuthMsg(lang==="fr"?"Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial (!@#$%^&*).":"Password must contain at least 8 characters, one uppercase letter, one number and one special character (!@#$%^&*).");
@@ -298,15 +302,15 @@ if(!passwordRegex.test(signupPass)){
 if(signupPass!==signupPass2){setAuthMsg(T.passwordMismatch);setAuthMsgType("error");return;}
     const{data,error}=await supabase.auth.signUp({
       email:signupEmail,password:signupPass,
-      options:{data:{full_name:signupName,role:signupRole}}
+options:{data:{first_name:signupFirstName,last_name:signupLastName,pseudo:signupPseudo,role:signupRole}}
     });
     if(error){setAuthLoading(false);setAuthMsg(error.message);setAuthMsgType("error");return;}
     if(signupRole==="coach"&&data.user){
       const sp=ALL_SPORTS.find(s=>s.fr===signupSport||s.en===signupSport)||ALL_SPORTS[0];
-      const initials=signupName.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
+      const initials=(signupFirstName[0]||"")+(signupLastName[0]||"");
       const color=COACH_COLORS[Math.floor(Math.random()*COACH_COLORS.length)];
       await supabase.from("coaches").insert({
-        user_id:data.user.id, name:signupName, sport:`${sp.emoji} ${lang==="fr"?sp.fr:sp.en}`,
+name:`${signupFirstName} ${signupLastName}`, pseudo:signupPseudo,
         location:signupLoc, langs:signupLangs, price:parseInt(signupRate)||60,
         bio:signupBio, certifs:signupCertifs.filter(Boolean),
         formats:signupFormats.length?signupFormats:["Présentiel","Visio"],
@@ -416,7 +420,9 @@ if(signupPass!==signupPass2){setAuthMsg(T.passwordMismatch);setAuthMsgType("erro
                   ))}
                 </div>
                 <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                  <input placeholder={T.name} value={signupName} onChange={e=>setSignupName(e.target.value)} style={inputSt}/>
+                  <input placeholder={lang==="fr"?"Prénom":"First name"} value={signupFirstName} onChange={e=>setSignupFirstName(e.target.value)} style={inputSt}/>
+<input placeholder={lang==="fr"?"Nom":"Last name"} value={signupLastName} onChange={e=>setSignupLastName(e.target.value)} style={inputSt}/>
+<input placeholder={lang==="fr"?"Pseudo (ex: @coachkev)":"Pseudo (e.g. @coachkev)"} value={signupPseudo} onChange={e=>setSignupPseudo(e.target.value)} style={inputSt}/>
                   <input placeholder={T.email} value={signupEmail} onChange={e=>setSignupEmail(e.target.value)} style={inputSt}/>
                   <input placeholder={T.password} type="password" value={signupPass} onChange={e=>setSignupPass(e.target.value)} style={inputSt}/>
                   <input placeholder={T.confirmPassword} type="password" value={signupPass2} onChange={e=>setSignupPass2(e.target.value)} style={inputSt}/>
