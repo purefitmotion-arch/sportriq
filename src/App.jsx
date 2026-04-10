@@ -16,6 +16,22 @@ const LIGHT_C = {
   gold:"#D4A017", green:"#009970", red:"#C0394F", pink:"#D45085",
 };
 
+// ✅ NOUVEAU: pays européens avec drapeaux
+const EU_COUNTRIES = [
+  {flag:"🇫🇷",fr:"France",en:"France"},
+  {flag:"🇧🇪",fr:"Belgique",en:"Belgium"},
+  {flag:"🇱🇺",fr:"Luxembourg",en:"Luxembourg"},
+  {flag:"🇨🇭",fr:"Suisse",en:"Switzerland"},
+  {flag:"🇩🇪",fr:"Allemagne",en:"Germany"},
+  {flag:"🇪🇸",fr:"Espagne",en:"Spain"},
+  {flag:"🇮🇹",fr:"Italie",en:"Italy"},
+  {flag:"🇳🇱",fr:"Pays-Bas",en:"Netherlands"},
+  {flag:"🇬🇧",fr:"Royaume-Uni",en:"UK"},
+  {flag:"🇵🇹",fr:"Portugal",en:"Portugal"},
+  {flag:"🇦🇹",fr:"Autriche",en:"Austria"},
+  {flag:"🇸🇪",fr:"Suède",en:"Sweden"},
+];
+
 const LANG = {
   fr:{
     sub:"Coachs certifiés en Europe · Tous sports · Présentiel, Visio, Programme écrit",
@@ -114,6 +130,14 @@ const LANG = {
     resetBtn:"Envoyer le lien",
     resetSuccess:"Email envoyé ! Vérifie ta boîte mail.",
     backToLogin:"Retour à la connexion",
+    filterCountry:"Pays",
+    allCountries:"Tous les pays",
+    earnings:"Revenus nets",
+    totalBookings:"Réservations payées",
+    avgRating:"Note moyenne",
+    unreadMessages:"messages non lus",
+    downloadPdf:"Télécharger récapitulatif PDF",
+    pdfYear:"Année fiscale",
   },
   en:{
     sub:"Certified coaches across Europe · All sports · In-person, Video, Written program",
@@ -212,6 +236,14 @@ const LANG = {
     resetBtn:"Send reset link",
     resetSuccess:"Email sent! Check your inbox.",
     backToLogin:"Back to login",
+    filterCountry:"Country",
+    allCountries:"All countries",
+    earnings:"Net earnings",
+    totalBookings:"Paid bookings",
+    avgRating:"Avg rating",
+    unreadMessages:"unread messages",
+    downloadPdf:"Download PDF report",
+    pdfYear:"Fiscal year",
   }
 };
 
@@ -342,6 +374,7 @@ export default function App(){
   const [page,setPage]=useState("home");
   const [sportFilter,setSportFilter]=useState("ALL");
   const [fmtFilter,setFmtFilter]=useState("ALL");
+  const [countryFilter,setCountryFilter]=useState("ALL"); // ✅ NOUVEAU
   const [searchQuery,setSearchQuery]=useState("");
   const [showAllSports,setShowAllSports]=useState(false);
   const [selectedCoach,setSelectedCoach]=useState(null);
@@ -397,6 +430,7 @@ export default function App(){
   const [hasBooked,setHasBooked]=useState(false);
 
   const [myBookings,setMyBookings]=useState([]);
+  const [coachBookings,setCoachBookings]=useState([]); // ✅ NOUVEAU: réservations reçues côté coach
   const [myAvails,setMyAvails]=useState([]);
   const [myPackages,setMyPackages]=useState([]);
   const [paymentRequests,setPaymentRequests]=useState([]);
@@ -422,6 +456,7 @@ export default function App(){
   const [convMessages,setConvMessages]=useState([]);
   const [msgInput,setMsgInput]=useState("");
   const msgEndRef=useRef(null);
+  const [unreadCount,setUnreadCount]=useState(0); // ✅ NOUVEAU: badge messages non lus
 
   const [openFaq,setOpenFaq]=useState(null);
   const [showLegal,setShowLegal]=useState(false);
@@ -442,16 +477,24 @@ export default function App(){
 
   useEffect(()=>{fetchCoaches();},[]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(()=>{if(user){fetchMyBookings();fetchPaymentRequests();fetchConversations();}},[user]);
+  useEffect(()=>{if(user){fetchMyBookings();fetchPaymentRequests();fetchConversations();fetchUnreadCount();}},[user]);
   useEffect(()=>{msgEndRef.current?.scrollIntoView({behavior:"smooth"});},[convMessages]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(()=>{if(myCoachId){fetchMyAvails();fetchMyPackages();}},[myCoachId]);
+  useEffect(()=>{if(myCoachId){fetchMyAvails();fetchMyPackages();fetchCoachBookings();}},[myCoachId]);
   useEffect(()=>{
     if(!activeConv)return;
     const interval=setInterval(()=>loadMessages(activeConv.coachId),5000);
     return()=>clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[activeConv]);
+
+  // ✅ NOUVEAU: polling unread count toutes les 30s
+  useEffect(()=>{
+    if(!user)return;
+    const interval=setInterval(()=>fetchUnreadCount(),30000);
+    return()=>clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[user]);
 
   const fetchCoaches=async()=>{
     setLoadingCoaches(true);
@@ -477,6 +520,12 @@ export default function App(){
     if(!user)return;
     const{data}=await supabase.from("bookings").select("*,coaches(name,sport,pseudo,photo_url)").eq("client_id",user.id).order("created_at",{ascending:false});
     if(data)setMyBookings(data);
+  };
+  // ✅ NOUVEAU: réservations reçues côté coach
+  const fetchCoachBookings=async()=>{
+    if(!myCoachId)return;
+    const{data}=await supabase.from("bookings").select("*").eq("coach_id",myCoachId).eq("status","paid").order("created_at",{ascending:false});
+    if(data)setCoachBookings(data);
   };
   const fetchMyAvails=async()=>{
     if(!myCoachId)return;
@@ -518,22 +567,34 @@ export default function App(){
     }
     setConversations(convs);
   };
+
+  // ✅ NOUVEAU: compte des messages non lus
+  const fetchUnreadCount=async()=>{
+    if(!user)return;
+    const{data}=await supabase.from("messages").select("id",{count:"exact"})
+      .eq("receiver_id",user.id)
+      .eq("read",false);
+    if(data)setUnreadCount(data.length);
+  };
+
   const loadMessages=async(coachId)=>{
     if(!user)return;
     const{data}=await supabase.from("messages").select("*").eq("coach_id",coachId).or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`).order("created_at",{ascending:true});
     if(data){setConvMessages(data.map(m=>({from:m.sender_id===user.id?"user":"coach",text:m.text,time:new Date(m.created_at).toLocaleTimeString("fr",{hour:"2-digit",minute:"2-digit"})})));}
   };
 
-  const switchLang=l=>{setLang(l);setSportFilter("ALL");};
+  const switchLang=l=>{setLang(l);setSportFilter("ALL");setCountryFilter("ALL");};
   const isSessionFormat=f=>f==="Présentiel"||f==="Visio"||f==="In-person"||f==="Video call";
   const isProgramFormat=f=>f==="Programme écrit"||f==="Written program";
   const isDiscussionFormat=f=>f==="Discussion / Conseil"||f==="Consultation";
 
+  // ✅ NOUVEAU: filtre pays intégré
   const filteredCoaches=coaches.filter(c=>{
     const s=sportFilter==="ALL"||c.sport===sportFilter;
     const f=fmtFilter==="ALL"||(c.formats||[]).includes(fmtFilter);
     const q=!searchQuery||c.name?.toLowerCase().includes(searchQuery.toLowerCase())||c.pseudo?.toLowerCase().includes(searchQuery.toLowerCase())||c.sport?.toLowerCase().includes(searchQuery.toLowerCase())||c.location?.toLowerCase().includes(searchQuery.toLowerCase())||c.bio?.toLowerCase().includes(searchQuery.toLowerCase());
-    return s&&f&&q;
+    const country=countryFilter==="ALL"||c.location?.toLowerCase().includes(countryFilter.toLowerCase());
+    return s&&f&&q&&country;
   });
 
   const doLogin=async()=>{
@@ -545,7 +606,6 @@ export default function App(){
     else setPage("dashboard");
   };
 
-  // ✅ NOUVEAU: réinitialisation mot de passe
   const doResetPassword=async()=>{
     if(!resetEmail){setAuthMsg(T.fillAll);setAuthMsgType("error");return;}
     setAuthLoading(true);setAuthMsg(null);
@@ -580,7 +640,6 @@ export default function App(){
       await fetchCoaches();setAuthLoading(false);setAuthMsg(T.coachRegistered);setAuthMsgType("success");
       setTimeout(()=>{setPage("home");setShowOnboarding(true);},1500);return;
     }
-    // Profil client créé en base
     if(signupRole==="client"&&data.user){
       await supabase.from("clients").insert({user_id:data.user.id,pseudo:signupPseudo,first_name:signupFirstName,last_name:signupLastName,email:signupEmail});
     }
@@ -591,7 +650,7 @@ export default function App(){
   const doLogout=async()=>{
     await supabase.auth.signOut();
     setUser(null);setUserRole(null);setMyCoachId(null);setMyCoachData(null);
-    setConversations([]);setActiveConv(null);setConvMessages([]);setPage("home");
+    setConversations([]);setActiveConv(null);setConvMessages([]);setUnreadCount(0);setPage("home");
   };
 
   const uploadPhoto=async(file)=>{
@@ -620,9 +679,11 @@ export default function App(){
     if(bookSlot&&bookHour)bookingData.slot=`${bookSlot.day} ${bookHour}`;
     if(bookPackage)bookingData.slot=`Package: ${bookPackage.name}`;
     await supabase.from("bookings").insert(bookingData);
-    // Email de confirmation client
+
+    // ✅ Email confirmation client
     supabase.functions.invoke("send-booking-email",{
       body:{
+        type:"client_confirmation",
         clientEmail:user.email,
         clientName:user.user_metadata?.first_name||user.email,
         coachName:bookCoach.pseudo?`@${bookCoach.pseudo}`:bookCoach.name,
@@ -631,6 +692,30 @@ export default function App(){
         amount:bookPackage?bookPackage.price:bookCoach.price,
       },
     });
+
+    // ✅ NOUVEAU: Email notification coach
+    const{data:coachUserData}=await supabase.from("coaches").select("user_id").eq("id",bookCoach.id).single();
+    if(coachUserData){
+      const{data:coachAuth}=await supabase.auth.admin?.getUserById?.(coachUserData.user_id).catch(()=>({data:null}))||{data:null};
+      // On récupère l'email du coach depuis la table coaches si disponible, sinon on skip
+      const{data:coachProfile}=await supabase.from("coaches").select("*").eq("id",bookCoach.id).single();
+      if(coachProfile){
+        supabase.functions.invoke("send-booking-email",{
+          body:{
+            type:"coach_notification",
+            coachEmail:coachAuth?.user?.email||null,
+            coachName:bookCoach.pseudo?`@${bookCoach.pseudo}`:bookCoach.name,
+            coachFirstName:coachProfile.name?.split(" ")[0]||bookCoach.name,
+            clientName:user.user_metadata?.first_name||user.email,
+            clientPseudo:user.user_metadata?.pseudo||null,
+            format:bookFormat||"—",
+            slot:bookSlot&&bookHour?`${bookSlot.day} ${bookHour}`:bookPackage?.name||"",
+            amount:bookPackage?bookPackage.price:bookCoach.price,
+          },
+        });
+      }
+    }
+
     if(bookSlot)await supabase.from("availabilities").update({is_booked:true}).eq("id",bookSlot.id);
     fetchMyBookings();setBookDone(true);setBookStep("select");
   };
@@ -688,6 +773,54 @@ export default function App(){
       setConversations(cs=>[newConv,...cs]);setActiveConv(newConv);setConvMessages([]);
     }
     setPage("messages");
+    setUnreadCount(0); // reset badge quand on ouvre les messages
+  };
+
+  // ✅ NOUVEAU: stats revenus coach
+  const coachEarningsGross=coachBookings.reduce((s,b)=>s+(b.amount||0),0);
+  const coachEarningsNet=Math.round(coachEarningsGross*0.95);
+
+  // ✅ NOUVEAU: PDF fiscal
+  const downloadPdf=()=>{
+    const year=new Date().getFullYear();
+    const lines=coachBookings.map((b,i)=>`
+      <tr style="border-bottom:1px solid #eee">
+        <td style="padding:8px">${new Date(b.created_at).toLocaleDateString("fr-FR")}</td>
+        <td style="padding:8px">${b.format||"—"}</td>
+        <td style="padding:8px">${b.slot||"—"}</td>
+        <td style="padding:8px;text-align:right">${b.amount}€</td>
+        <td style="padding:8px;text-align:right;color:#EF476F">${Math.round(b.amount*0.05)}€</td>
+        <td style="padding:8px;text-align:right;color:#06D6A0;font-weight:600">${Math.round(b.amount*0.95)}€</td>
+      </tr>
+    `).join("");
+    const html=`
+      <html><head><style>body{font-family:sans-serif;padding:32px;color:#1A1A2E}h1{color:#6C63FF}table{width:100%;border-collapse:collapse}th{background:#f4f4f8;padding:10px 8px;text-align:left;font-size:13px}td{font-size:13px}</style></head>
+      <body>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+          <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#6C63FF,#00D4AA);display:flex;align-items:center;justify-content:center">⚡</div>
+          <h1 style="margin:0">Sportriq</h1>
+        </div>
+        <h2>Récapitulatif fiscal ${year}</h2>
+        <p><strong>Coach :</strong> ${myCoachData?.name||"—"} (@${myCoachData?.pseudo||"—"})</p>
+        <p><strong>Période :</strong> 01/01/${year} — 31/12/${year}</p>
+        <hr/>
+        <div style="display:flex;gap:32px;margin:20px 0">
+          <div><div style="font-size:12px;color:#666">Revenus bruts</div><div style="font-size:22px;font-weight:700">${coachEarningsGross}€</div></div>
+          <div><div style="font-size:12px;color:#666">Commission Sportriq (5%)</div><div style="font-size:22px;font-weight:700;color:#EF476F">-${Math.round(coachEarningsGross*0.05)}€</div></div>
+          <div><div style="font-size:12px;color:#666">Revenus nets</div><div style="font-size:22px;font-weight:700;color:#06D6A0">${coachEarningsNet}€</div></div>
+        </div>
+        <table>
+          <thead><tr><th>Date</th><th>Format</th><th>Créneau</th><th style="text-align:right">Brut</th><th style="text-align:right">Commission</th><th style="text-align:right">Net</th></tr></thead>
+          <tbody>${lines}</tbody>
+        </table>
+        <p style="margin-top:32px;font-size:12px;color:#888">Document généré par Sportriq · sportriq.com · hello@sportriq.com</p>
+      </body></html>
+    `;
+    const blob=new Blob([html],{type:"text/html"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;a.download=`sportriq-fiscal-${year}.html`;a.click();
+    URL.revokeObjectURL(url);
   };
 
   const card={background:C.card,border:`1px solid ${C.border}`,borderRadius:16};
@@ -709,10 +842,15 @@ export default function App(){
           </div>
         </div>
         <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-          {[["home","Home"],["coaches",T.nav.coaches],["messages",T.nav.messages]].map(([p,l])=>(
+          {[["home","Home"],["coaches",T.nav.coaches]].map(([p,l])=>(
             <button key={p} onClick={()=>setPage(p)} style={{fontSize:13,padding:"5px 12px",borderRadius:8,border:"none",background:page===p?`${C.accent}18`:"transparent",cursor:"pointer",color:page===p?C.accent:C.muted,fontWeight:page===p?600:400}}>{l}</button>
           ))}
-          {user&&<button onClick={()=>{setPage("dashboard");fetchMyBookings();fetchPaymentRequests();}} style={{fontSize:13,padding:"5px 12px",borderRadius:8,border:"none",background:page==="dashboard"?`${C.accent}18`:"transparent",cursor:"pointer",color:page==="dashboard"?C.accent:C.muted,fontWeight:page==="dashboard"?600:400}}>{T.nav.dashboard}</button>}
+          {/* ✅ NOUVEAU: badge messages non lus */}
+          <button onClick={()=>setPage("messages")} style={{fontSize:13,padding:"5px 12px",borderRadius:8,border:"none",background:page==="messages"?`${C.accent}18`:"transparent",cursor:"pointer",color:page==="messages"?C.accent:C.muted,fontWeight:page==="messages"?600:400,position:"relative"}}>
+            {T.nav.messages}
+            {unreadCount>0&&<span style={{position:"absolute",top:2,right:2,width:8,height:8,borderRadius:"50%",background:C.red,border:`2px solid ${dark?"rgba(14,14,26,.92)":"rgba(244,244,248,.95)"}`}}/>}
+          </button>
+          {user&&<button onClick={()=>{setPage("dashboard");fetchMyBookings();fetchPaymentRequests();if(myCoachId)fetchCoachBookings();}} style={{fontSize:13,padding:"5px 12px",borderRadius:8,border:"none",background:page==="dashboard"?`${C.accent}18`:"transparent",cursor:"pointer",color:page==="dashboard"?C.accent:C.muted,fontWeight:page==="dashboard"?600:400}}>{T.nav.dashboard}</button>}
         </div>
         <div style={{display:"flex",gap:6,alignItems:"center"}}>
           <button onClick={()=>setDark(d=>!d)} style={{fontSize:15,padding:"3px 8px",borderRadius:8,border:`1px solid ${C.border}`,background:"transparent",cursor:"pointer"}}>{dark?"☀️":"🌙"}</button>
@@ -835,8 +973,6 @@ export default function App(){
               {authMode==="login"?T.loginTitle:authMode==="reset"?T.resetTitle:T.signupTitle}
             </h2>
             <Alert msg={authMsg} type={authMsgType} C={C}/>
-
-            {/* ✅ NOUVEAU: page reset password */}
             {authMode==="reset"&&(
               <div style={{display:"flex",flexDirection:"column",gap:12}}>
                 <p style={{fontSize:13,color:C.muted,margin:"0 0 4px"}}>
@@ -849,20 +985,17 @@ export default function App(){
                 </p>
               </div>
             )}
-
             {authMode==="login"&&(
               <div style={{display:"flex",flexDirection:"column",gap:12}}>
                 <input placeholder={T.email} value={loginEmail} onChange={e=>setLoginEmail(e.target.value)} style={inputSt}/>
                 <input placeholder={T.password} type="password" value={loginPass} onChange={e=>setLoginPass(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doLogin()} style={inputSt}/>
                 <BtnPrimary label={authLoading?T.loading:T.loginBtn} onClick={doLogin} C={C} disabled={authLoading}/>
-                {/* ✅ NOUVEAU: lien mot de passe oublié */}
                 <p style={{fontSize:13,color:C.muted,textAlign:"center",margin:0}}>
                   <span onClick={()=>{setAuthMode("reset");setAuthMsg(null);setResetEmail(loginEmail);}} style={{color:C.accent,cursor:"pointer"}}>{T.forgotPassword}</span>
                 </p>
                 <p style={{fontSize:13,color:C.muted,textAlign:"center",margin:0}}>{T.noAccount} <span onClick={()=>{setAuthMode("signup");setAuthMsg(null);}} style={{color:C.accent,cursor:"pointer"}}>{T.signupTitle}</span></p>
               </div>
             )}
-
             {authMode==="signup"&&(
               <>
                 <div style={{display:"flex",gap:8,marginBottom:14}}>
@@ -1003,6 +1136,26 @@ export default function App(){
             <input placeholder={T.searchPlaceholder} value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} style={{flex:1,padding:"8px 12px",borderRadius:8,border:"none",background:"transparent",color:C.txt,fontSize:14,outline:"none"}}/>
             {searchQuery&&<button onClick={()=>setSearchQuery("")} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:16,padding:"0 8px"}}>✕</button>}
           </div>
+
+          {/* ✅ NOUVEAU: filtre pays européens */}
+          <div style={{marginBottom:12}}>
+            <div style={{fontSize:11,color:C.muted,fontWeight:600,marginBottom:6,textTransform:"uppercase",letterSpacing:.8}}>🌍 {T.filterCountry}</div>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+              <button onClick={()=>setCountryFilter("ALL")} style={{padding:"5px 12px",borderRadius:999,border:`1px solid ${countryFilter==="ALL"?C.accent:"rgba(128,128,160,0.25)"}`,background:countryFilter==="ALL"?`${C.accent}22`:"transparent",color:countryFilter==="ALL"?C.accent:C.muted,cursor:"pointer",fontSize:12,fontWeight:countryFilter==="ALL"?600:400}}>
+                🌍 {T.allCountries}
+              </button>
+              {EU_COUNTRIES.map(c=>{
+                const val=lang==="fr"?c.fr:c.en;
+                const active=countryFilter===val;
+                return(
+                  <button key={c.fr} onClick={()=>setCountryFilter(active?"ALL":val)} style={{padding:"5px 12px",borderRadius:999,border:`1px solid ${active?C.accent2:"rgba(128,128,160,0.25)"}`,background:active?`${C.accent2}22`:"transparent",color:active?C.accent2:C.muted,cursor:"pointer",fontSize:12,fontWeight:active?600:400}}>
+                    {c.flag} {val}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:10}}>
             <Pill label={lang==="fr"?"Tous":"All"} active={sportFilter==="ALL"} onClick={()=>setSportFilter("ALL")} C={C}/>
             {[...new Set(coaches.map(c=>c.sport))].filter(Boolean).map(s=>(
@@ -1020,7 +1173,7 @@ export default function App(){
               <div style={{textAlign:"center",paddingTop:40}}>
                 <div style={{fontSize:40,marginBottom:12}}>🔍</div>
                 <p style={{color:C.muted}}>{searchQuery?`${T.noResults} "${searchQuery}"`:T.noCoaches}</p>
-                <button onClick={()=>{setSearchQuery("");setSportFilter("ALL");setFmtFilter("ALL");}} style={{marginTop:12,padding:"8px 18px",borderRadius:999,border:`1px solid ${C.border}`,background:"transparent",color:C.muted,cursor:"pointer",fontSize:13}}>{lang==="fr"?"Réinitialiser les filtres":"Reset filters"}</button>
+                <button onClick={()=>{setSearchQuery("");setSportFilter("ALL");setFmtFilter("ALL");setCountryFilter("ALL");}} style={{marginTop:12,padding:"8px 18px",borderRadius:999,border:`1px solid ${C.border}`,background:"transparent",color:C.muted,cursor:"pointer",fontSize:13}}>{lang==="fr"?"Réinitialiser les filtres":"Reset filters"}</button>
               </div>
             ):(
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:14}}>
@@ -1218,6 +1371,29 @@ export default function App(){
 
           {dashTab==="overview"&&(
             <div>
+              {/* ✅ NOUVEAU: stats revenus coach */}
+              {userRole==="coach"&&(
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:12,marginBottom:16}}>
+                  {[
+                    {icon:"💰",label:T.earnings,value:`${coachEarningsNet}€`,sub:"95% net",color:C.green},
+                    {icon:"📅",label:T.totalBookings,value:coachBookings.length,sub:lang==="fr"?"réservations":"bookings",color:C.accent},
+                    {icon:"⭐",label:T.avgRating,value:myCoachData?.avg_rating?`${myCoachData.avg_rating}/5`:"—",sub:`${myCoachData?.review_count||0} avis`,color:C.gold},
+                  ].map((s,i)=>(
+                    <div key={i} style={{...card,padding:16,textAlign:"center"}}>
+                      <div style={{fontSize:22,marginBottom:4}}>{s.icon}</div>
+                      <div style={{fontWeight:800,fontSize:20,color:s.color}}>{s.value}</div>
+                      <div style={{fontSize:12,color:C.txt,fontWeight:600,marginTop:2}}>{s.label}</div>
+                      <div style={{fontSize:11,color:C.muted}}>{s.sub}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* ✅ NOUVEAU: bouton PDF fiscal */}
+              {userRole==="coach"&&coachBookings.length>0&&(
+                <button onClick={downloadPdf} style={{width:"100%",padding:"10px",borderRadius:10,background:`${C.accent2}18`,border:`1px solid ${C.accent2}`,color:C.accent2,cursor:"pointer",fontSize:13,fontWeight:600,marginBottom:16,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+                  📄 {T.downloadPdf} {new Date().getFullYear()}
+                </button>
+              )}
               {userRole==="coach"&&myCoachData&&(
                 <div style={{...card,padding:18,marginBottom:16,display:"flex",gap:14,alignItems:"center",flexWrap:"wrap"}}>
                   <Av src={myCoachData.photo_url} initials={(myCoachData.name||"??").split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()} color={myCoachData.color||C.accent} size={56}/>
@@ -1334,19 +1510,10 @@ export default function App(){
               <h3 style={{fontWeight:600,fontSize:15,marginBottom:14,color:C.txt}}>💳 {T.requestPayment}</h3>
               <div style={{display:"flex",flexDirection:"column",gap:10}}>
                 <div style={{display:"flex",gap:8}}>
-                  <input
-                    placeholder="@pseudo du client"
-                    value={reqClientSearch}
-                    onChange={e=>{setReqClientSearch(e.target.value);setReqClientFound(null);setReqClientMsg(null);}}
-                    style={{flex:1,padding:"9px 12px",borderRadius:10,border:`1px solid ${C.border}`,background:dark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.04)",color:C.txt,fontSize:13,outline:"none"}}
-                  />
-                  <button onClick={searchClient} style={{padding:"9px 16px",borderRadius:10,background:`${C.accent}22`,border:`1px solid ${C.accent}`,color:C.accent,cursor:"pointer",fontSize:13,fontWeight:600,flexShrink:0}}>
-                    {lang==="fr"?"Chercher":"Search"}
-                  </button>
+                  <input placeholder="@pseudo du client" value={reqClientSearch} onChange={e=>{setReqClientSearch(e.target.value);setReqClientFound(null);setReqClientMsg(null);}} style={{flex:1,padding:"9px 12px",borderRadius:10,border:`1px solid ${C.border}`,background:dark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.04)",color:C.txt,fontSize:13,outline:"none"}}/>
+                  <button onClick={searchClient} style={{padding:"9px 16px",borderRadius:10,background:`${C.accent}22`,border:`1px solid ${C.accent}`,color:C.accent,cursor:"pointer",fontSize:13,fontWeight:600,flexShrink:0}}>{lang==="fr"?"Chercher":"Search"}</button>
                 </div>
-                {reqClientMsg&&(
-                  <div style={{fontSize:12,color:reqClientFound?C.green:C.red,padding:"6px 10px",borderRadius:8,background:reqClientFound?`${C.green}18`:`${C.red}18`}}>{reqClientMsg}</div>
-                )}
+                {reqClientMsg&&<div style={{fontSize:12,color:reqClientFound?C.green:C.red,padding:"6px 10px",borderRadius:8,background:reqClientFound?`${C.green}18`:`${C.red}18`}}>{reqClientMsg}</div>}
                 <input placeholder={T.requestDesc} value={reqDesc} onChange={e=>setReqDesc(e.target.value)} style={{padding:"9px 12px",borderRadius:10,border:`1px solid ${C.border}`,background:dark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.04)",color:C.txt,fontSize:13,outline:"none"}}/>
                 <input placeholder={T.requestAmount} type="number" value={reqAmount} onChange={e=>setReqAmount(e.target.value)} style={{padding:"9px 12px",borderRadius:10,border:`1px solid ${C.border}`,background:dark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.04)",color:C.txt,fontSize:13,outline:"none"}}/>
                 <button onClick={sendPaymentRequest} disabled={!reqDesc||!reqAmount||!reqClientFound} style={{padding:"11px",borderRadius:10,background:(!reqDesc||!reqAmount||!reqClientFound)?"#555":`linear-gradient(135deg,${C.accent},${C.accent2})`,border:"none",color:"#fff",fontWeight:700,cursor:"pointer"}}>{T.sendRequest}</button>
@@ -1485,13 +1652,15 @@ export default function App(){
           </div>
         </div>
       )}
-{/* FOOTER */}
-<footer style={{textAlign:"center",padding:"24px",borderTop:`1px solid ${C.border}`,fontSize:12,color:C.muted,marginTop:40}}>
-  © 2026 <span style={{color:C.accent,fontWeight:700}}>Sportriq</span> · Paiements sécurisés Stripe
-  <span onClick={()=>setShowLegal(true)} style={{marginLeft:16,cursor:"pointer",textDecoration:"underline",color:C.muted}}>CGU</span>
-  <span onClick={()=>setShowLegal(true)} style={{marginLeft:12,cursor:"pointer",textDecoration:"underline",color:C.muted}}>Confidentialité</span>
-  <span onClick={()=>setShowLegal(true)} style={{marginLeft:12,cursor:"pointer",textDecoration:"underline",color:C.muted}}>Mentions légales</span>
-</footer>
+
+      {/* FOOTER */}
+      <footer style={{textAlign:"center",padding:"24px",borderTop:`1px solid ${C.border}`,fontSize:12,color:C.muted,marginTop:40}}>
+        © 2026 <span style={{color:C.accent,fontWeight:700}}>Sportriq</span> · Paiements sécurisés Stripe
+        <span onClick={()=>setShowLegal(true)} style={{marginLeft:16,cursor:"pointer",textDecoration:"underline",color:C.muted}}>CGU</span>
+        <span onClick={()=>setShowLegal(true)} style={{marginLeft:12,cursor:"pointer",textDecoration:"underline",color:C.muted}}>Confidentialité</span>
+        <span onClick={()=>setShowLegal(true)} style={{marginLeft:12,cursor:"pointer",textDecoration:"underline",color:C.muted}}>Mentions légales</span>
+      </footer>
+
       {showLegal&&<Legal lang={lang} C={C} onClose={()=>setShowLegal(false)}/>}
       <CookieBanner lang={lang} C={C} onShowLegal={()=>setShowLegal(true)}/>
     </div>
